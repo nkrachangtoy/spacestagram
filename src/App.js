@@ -1,29 +1,59 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
+import PostsList from "./components/PostsList";
 import "./App.css";
 import axios from "./API/axios";
 import requests from "./API/requests";
 
 const App = () => {
-  const [images, setImages] = useState();
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const fetchData = async () => {
-    const request = await axios.get(requests.apodImages);
-    setImages(request.data);
-  };
+  const fetchMoviesHandler = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get(requests.mrpFHAZImages);
+      const data = response.data.photos;
+      console.log(data);
+      const transformedPostData = data.map((postData) => {
+        return {
+          id: postData.id,
+          rover: `${postData.rover.name} Rover`,
+          title: postData.camera.full_name,
+          url: postData.img_src,
+          date: postData.earth_date,
+        };
+      });
+      setPosts(transformedPostData);
+    } catch (error) {
+      setError("Something went wrong!");
+    }
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchMoviesHandler();
+  }, [fetchMoviesHandler]);
+
+  let content = <p>Found no posts.</p>;
+
+  if (posts) {
+    content = <PostsList posts={posts} />;
+  }
+
+  if (error) {
+    content = <p>{error}</p>;
+  }
+
+  if (isLoading) {
+    content = <p>Loading...</p>;
+  }
 
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>Spacestagram</h1>
-        <h2>{images.title}</h2>
-        <h3>{images.date}</h3>
-        <img src={images.url} alt={images.title} />
-        <p>{images.explanation}</p>
-      </header>
+      <header className="App-header">{content}</header>
     </div>
   );
 };
